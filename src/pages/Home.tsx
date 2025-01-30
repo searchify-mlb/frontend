@@ -4,54 +4,37 @@ import { SearchBar } from "../components/SearchBar";
 import { VideoList } from "../components/VideoList";
 import { Footer } from "../components/Footer";
 import { Modal } from "../components/Modal";
-import { Video } from "../components/VideoCard";
-
-const videos: Video[] = [
-  {
-    id: 1,
-    title: "Video 1",
-    description: "This is video 1",
-    url: "https://sporty-clips.mlb.com/ZThRWHFfWGw0TUFRPT1fQmdZQVhGME5YbEVBRFZFQ1VBQUFWd0ZRQUFBQVdsY0FCbFJXQWdjTkNGWmRDUUJX.mp4",
-  },
-  {
-    id: 2,
-    title: "Video 2",
-    description: "This is video 2",
-    url: "https://sporty-clips.mlb.com/ZThRWHFfWGw0TUFRPT1fQmdZQVhGME5YbEVBRFZFQ1VBQUFWd0ZRQUFBQVdsY0FCbFJXQWdjTkNGWmRDUUJX.mp4",
-  },
-  {
-    id: 3,
-    title: "Video 3",
-    description: "This is video 3",
-    url: "https://sporty-clips.mlb.com/ZThRWHFfWGw0TUFRPT1fQmdZQVhGME5YbEVBRFZFQ1VBQUFWd0ZRQUFBQVdsY0FCbFJXQWdjTkNGWmRDUUJX.mp4",
-  },
-  {
-    id: 4,
-    title: "Video 4",
-    description: "This is video 4",
-    url: "https://sporty-clips.mlb.com/ZThRWHFfWGw0TUFRPT1fQmdZQVhGME5YbEVBRFZFQ1VBQUFWd0ZRQUFBQVdsY0FCbFJXQWdjTkNGWmRDUUJX.mp4",
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { searchVideos } from "../utils/api";
+import { Result, SearchVideoResponse } from "../utils/types";
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedVideo, setSelectedVideo] = useState<Result | null>(null);
 
-  const handleSelectVideo = (id: number) => {
-    setSelectedVideo(videos.find((video) => video.id === id) || null);
+  const { data: videosResponse, isFetching: videosLoading } =
+    useQuery<SearchVideoResponse>({
+      queryKey: ["videos", searchQuery],
+      queryFn: () => searchVideos(searchQuery),
+      enabled: searchQuery !== "",
+    });
+
+  const videos = videosResponse?.result.results || [];
+
+  const handleSelectVideo = (id: string) => {
+    setSelectedVideo(videos.find((video) => video.metadata.id === id) || null);
     setIsModalOpen(true);
   };
   const closeModal = () => setIsModalOpen(false);
 
-  function handleSearch(searchQuery: string) {
-    console.log(searchQuery);
-  }
-
   return (
-    <main className="w-full h-screen">
+    <main className="w-full flex flex-col min-h-screen">
       <Navbar />
-      <div className="container flex flex-col justify-center w-5/6 mx-auto my-16 space-y-8 md:w-3/4">
-        <SearchBar onSearch={handleSearch} />
+      <div className="flex-grow container flex flex-col w-5/6 mx-auto my-16 space-y-8 md:w-3/4 ">
+        <SearchBar onSearch={setSearchQuery} />
+        {videosLoading && <p>Loading videos...</p>}
+        {videos.length === 0 && !videosLoading && <p>Find some cool videos.</p>}
         <VideoList videos={videos} onSelectVideo={handleSelectVideo} />
       </div>
       <Footer />
@@ -62,17 +45,17 @@ export default function Home() {
             onClick={(e) => e.stopPropagation()}
           >
             <video
-              src={selectedVideo?.url}
+              src={selectedVideo?.metadata.video}
               className="w-full rounded-xl"
               controls
             />
             <div className="flex flex-col w-full mb-4 space-y-1">
               <h3 className="text-xl font-bold">
-                {selectedVideo?.title || "Clip title"}
+                {selectedVideo?.content || "Clip title"}
               </h3>
-              <p className="text-md">
+              {/* <p className="text-md">
                 {selectedVideo?.description || "Clip description"}
-              </p>
+              </p> */}
             </div>
             <button
               className="px-4 py-2 text-sm text-black transition-all border-2 border-black rounded-full hover:cursor-pointer hover:shadow-md hover:font-bold"

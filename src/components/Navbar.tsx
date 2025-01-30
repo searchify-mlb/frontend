@@ -1,11 +1,14 @@
 import { useNavigate } from "react-router";
 import BaseballIcon from "../assets/baseball.svg";
 import LogoutIcon from "../assets/logout.svg";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 
 export const Navbar = () => {
   const navigate = useNavigate();
+  const [, setToken] = useLocalStorage("token", "");
 
   const handleLogout = () => {
+    setToken("");
     navigate("/login", { replace: true });
   };
 

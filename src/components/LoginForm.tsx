@@ -1,16 +1,31 @@
 import { SubmitHandler, useForm } from "react-hook-form";
-
-type FormFields = {
-  email: string;
-  password: string;
-};
+import { LoginFields } from "../utils/types";
+import { useMutation } from "@tanstack/react-query";
+import { login } from "../utils/api";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useNavigate } from "react-router";
+import { useEffect } from "react";
 
 export const LoginForm = () => {
-  const { register, handleSubmit } = useForm<FormFields>();
+  const { register, handleSubmit } = useForm<LoginFields>();
+  const [token, setToken] = useLocalStorage("token", "");
+  const navigate = useNavigate();
 
-  const onSubmit: SubmitHandler<FormFields> = (data) => {
-    console.log(data);
+  const { mutate: loginMutation } = useMutation({ mutationFn: login });
+
+  const onSubmit: SubmitHandler<LoginFields> = (loginField) => {
+    loginMutation(loginField, {
+      onSuccess: (data) => {
+        setToken(data.token || "token");
+      },
+    });
   };
+
+  useEffect(() => {
+    if (token.length !== 0) {
+      navigate("/", { replace: true });
+    }
+  }, [token, navigate]);
 
   return (
     <form
@@ -21,7 +36,7 @@ export const LoginForm = () => {
       <div className="flex flex-col w-full space-y-2">
         <label htmlFor="email">Email</label>
         <input
-          {...(register("email"), { required: true })}
+          {...register("email")}
           type="email"
           name="email"
           className="px-4 py-2 text-sm border rounded-xl"
@@ -31,7 +46,7 @@ export const LoginForm = () => {
       <div className="flex flex-col w-full space-y-2">
         <label htmlFor="password">Password</label>
         <input
-          {...(register("password"), { required: true })}
+          {...register("password")}
           type="password"
           name="password"
           className="px-4 py-2 text-sm border rounded-xl"
